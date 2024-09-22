@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Upload JSON File</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f0f8ff;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+        }
+        .container {
+            text-align: center;
+            background-color: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+        }
+        h1 {
+            color: #333;
+        }
+        .upload-area {
+            border: 2px dashed #007bff;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 20px 0;
+            transition: background-color 0.3s;
+        }
+        .upload-area.hover {
+            background-color: #e9f5ff;
+        }
+        .upload-button {
+            background-color: #007bff;
+            color: #fff;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        .upload-button:hover {
+            background-color: #0056b3;
+        }
+        .loading {
+            display: none;
+            margin-top: 20px;
+            font-weight: bold;
+            color: #007bff;
+        }
+        .ready-message {
+            display: none;
+            margin-top: 20px;
+            font-weight: bold;
+            color: green;
+        }
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #3498db;
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            animation: spin 1s linear infinite;
+            display: inline-block;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Upload JSON File</h1>
+        <form id="upload-form" action="/upload" method="POST" enctype="multipart/form-data">
+            <div class="upload-area" id="upload-area">
+                Drag & Drop your file here or 
+                <label for="file-upload" class="upload-button">Browse Files</label>
+                <input type="file" id="file-upload" name="file" accept=".json" required style="display: none;">
+            </div>
+            <div class="file-name" id="file-name">No file chosen</div>
+            <button type="submit" class="upload-button">Upload</button>
+        </form>
+        <div class="loading" id="loading">
+            <span>Please wait, your file is generating...</span>
+            <div class="spinner"></div>
+        </div>
+        <div class="ready-message" id="ready-message">
+            <span>Your PDF is ready! <a id="download-link" href="#" download>Download</a></span>
+        </div>
+    </div>
+
+    <script>
+        const uploadForm = document.getElementById('upload-form');
+        const loadingDiv = document.getElementById('loading');
+        const readyMessage = document.getElementById('ready-message');
+        const downloadLink = document.getElementById('download-link');
+        const fileInput = document.getElementById('file-upload');
+        const fileNameDisplay = document.getElementById('file-name');
+
+        // Listen for changes to the file input
+        fileInput.addEventListener('change', function() {
+            if (fileInput.files.length > 0) {
+                fileNameDisplay.textContent = fileInput.files[0].name;  // Display the file name
+            } else {
+                fileNameDisplay.textContent = 'No file chosen';  // Reset if no file is chosen
+            }
+        });
+
+        uploadForm.addEventListener('submit', function(event) {
+            event.preventDefault();
+            loadingDiv.style.display = 'block'; // Show loading message
+            
+            const formData = new FormData(uploadForm);
+            fetch('/upload', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Network response was not ok');
+                }
+                return response.blob(); // Get the response as a Blob
+            })
+            .then(blob => {
+                const url = window.URL.createObjectURL(blob); // Create a URL for the Blob
+                loadingDiv.style.display = 'none'; // Hide loading message
+                readyMessage.style.display = 'block'; // Show ready message
+                const timestamp = new Date().toISOString().replace(/[-:.]/g, "_").split("T")[0] + "_" + new Date().toISOString().split("T")[1].split(".")[0].replace(/:/g, "_");
+                downloadLink.href = url; // Update to the Blob URL
+                downloadLink.download = `Tik_Tok_Durum_${timestamp}.pdf`; // Set the dynamic download filename
+            })
+            .catch(error => {
+                loadingDiv.style.display = 'none'; // Hide loading message on error
+                alert('An error occurred while generating the PDF: ' + error.message);
+            });
+        });
+    </script>
+</body>
+</html>
